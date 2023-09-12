@@ -1,0 +1,16 @@
+.vscode/*
+*.jar
+*.log
+*.class
+.DS_Store
+target/
+java/.classpath
+java/.project
+java/.settings
+logs/*
+
+## Don't commit test config to real resources
+src/test/resources/temp/
+
+## Don't commit actual ENV settings
+test-env.list

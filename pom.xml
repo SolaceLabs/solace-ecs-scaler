@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.solace.scalers.aws_ecs</groupId>
+  <artifactId>solace-ecs-scaler</artifactId>
+  <version>1.0.0</version>
+
+  <name>solace-ecs-scaler</name>
+  <!-- FIXME change it to the project's website -->
+  <url>https://github.com/dennis-brinley/solace-ecs-scaler</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-cloudwatch</artifactId>
+        <version>1.12.542</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-ecs</artifactId>
+      <version>1.12.542</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.solace</groupId>
+      <artifactId>semp-monitoring-client</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>2.20.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.20.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jcl</artifactId>
+      <version>2.20.0</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>1.18.26</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>2.15.1</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+      <plugins>
+        <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.2.0</version>
+        </plugin>
+        <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.2.0</version>
+          <executions>
+            <execution>
+                <id>copy-config</id>
+                <phase>generate-sources</phase>
+                <goals>
+                    <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                    <outputDirectory>${basedir}/target/src/main/resources</outputDirectory>
+                    <resources>
+                        <resource>
+                            <directory>src/main/resources</directory>
+                            <includes>
+                                <include>*.properties</include>
+                            </includes>
+                        </resource>
+                    </resources>
+                </configuration>
+            </execution>
+          </executions>          
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.0</version>
+            <configuration>
+                <source>${maven.compiler.source}</source>
+                <target>${maven.compiler.target}</target>
+                <mainClass>com.solace.scalers.aws_ecs.SolaceEcsAutoscalerApp</mainClass>
+            </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+            <version>3.1.0</version>
+            <configuration>
+                <skip>true</skip>
+            </configuration>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>3.4.1</version>
+            <configuration>
+              <descriptors>
+                <descriptor>src/assembly/jar-with-dependencies.xml</descriptor>
+              </descriptors>
+              <attach>false</attach>
+            </configuration>
+            <executions>
+              <execution>
+                <id>create-archive</id>
+                <phase>package</phase>
+                  <goals>
+                    <goal>single</goal>
+                  </goals>
+                  <configuration>
+                    <archive>
+                      <manifest>
+                          <mainClass>
+                              com.solace.scalers.aws_ecs.SolaceEcsAutoscalerApp
+                          </mainClass>
+                      </manifest>
+                    </archive>
+                  </configuration>
+              </execution>
+            </executions>
+        </plugin>
+      </plugins>
+  </build>
+</project>
