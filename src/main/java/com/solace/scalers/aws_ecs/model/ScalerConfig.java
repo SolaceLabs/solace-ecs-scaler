@@ -36,21 +36,21 @@ public class ScalerConfig {
 
         @JsonProperty
         @NonNull
-        private String  brokerSempUrl;
+        protected String  brokerSempUrl;
 
         @JsonProperty
-        private String  username;
+        protected String  username;
 
         @JsonProperty
-        private String  password;
+        protected String  password;
 
         @JsonProperty
         @NonNull
-        private String  msgVpnName;
+        protected String  msgVpnName;
     
         @JsonProperty
         @NonNull
-        private Integer pollingInterval;
+        protected Integer pollingInterval;
     }
 
     @Data
@@ -61,19 +61,19 @@ public class ScalerConfig {
 
         @JsonProperty
         @NonNull
-        private String ecsCluster;
+        protected String ecsCluster;
 
         @JsonProperty
         @NonNull
-        private String ecsService;
+        protected String ecsService;
 
         @JsonProperty
         @NonNull
-        private String queueName;
+        protected String queueName;
 
         @JsonProperty
         @NonNull
-        private ScalerBehaviorConfig scalerBehaviorConfig;
+        protected ScalerBehaviorConfig scalerBehaviorConfig;
     }
 
     @Data
@@ -84,29 +84,29 @@ public class ScalerConfig {
 
         @JsonProperty
         @NonNull
-        private Integer minReplicaCount;
+        protected Integer minReplicaCount;
 
         @JsonProperty
         @NonNull
-        private Integer maxReplicaCount;
+        protected Integer maxReplicaCount;
 
         @JsonProperty
         @Default
-        private Integer messageCountTarget = 0;
+        protected Integer messageCountTarget = 0;
         
         @JsonProperty
         @Default
-        private Integer messageReceiveRateTarget = 0;
+        protected Integer messageReceiveRateTarget = 0;
 
         @JsonProperty
         @Default
-        private Integer messageSpoolUsageTarget = 0;
+        protected Integer messageSpoolUsageTarget = 0;
     
         @JsonProperty
-        private ScalerOperation scaleOutConfig;
+        protected ScalerOperation scaleOutConfig;
 
         @JsonProperty
-        private ScalerOperation scaleInConfig;
+        protected ScalerOperation scaleInConfig;
 
     }
 
@@ -118,14 +118,14 @@ public class ScalerConfig {
 
         @JsonProperty
         @Default
-        private Integer maxScaleStep = 0;
+        protected Integer maxScaleStep = 0;
     
         @JsonProperty
         @Default
-        private Integer cooldownPeriod = 0;
+        protected Integer cooldownPeriod = 0;
     
         @JsonProperty
         @Default
-        private Integer stabilizationWindow = 0;
+        protected Integer stabilizationWindow = 0;
     }
 }

@@ -54,6 +54,7 @@ There is an Scaling Adjustment factor that is applied for scale down operations.
     - Application Queues defined as non-exclusive (with or without partitions)
 
 ## Limitations
+- The scaler currently supports scaling of ECS services deployed to AWS Fargate capacity provider.
 - Current only supports Basic Auth to Solace PubSub+ Brokers; mTLS and other authentication methods are not currently supported
 - One instance of the Solace ECS Scaler is required per Solace PubSub+ Service / Message VPN
 - One instance of the Solace ECS Scaler is required per AWS Region where ECS services are deployed

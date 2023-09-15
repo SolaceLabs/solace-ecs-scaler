@@ -8,8 +8,7 @@ import com.solace.scalers.aws_ecs.EcsServiceScaler;
 import com.solace.scalers.aws_ecs.SolaceQueueMonitor;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.BrokerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
-
-import io.swagger.client.model.MsgVpnQueueResponse;
+import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
 
 /**
  * Helper class to support Solace Queue Monitoring via SEMPv2
@@ -47,12 +46,12 @@ public class SolaceQueueMonitorUtils {
      * @param msgVpnQueueResponse
      * @return
      */
-    public static Map<String, Long> getQueueMetricsFromQueueResponse( MsgVpnQueueResponse msgVpnQueueResponse ) {
+    public static Map<String, Long> getQueueMetricsFromQueueResponse( SempQueueResponse sempQueueResponse ) {
 
         Map<String, Long> metrics = new HashMap<>( 3 );
-        metrics.put( EcsServiceScaler.METRIC_MSG_COUNT, getMessageCountFromQueueResponse(msgVpnQueueResponse) );
-        metrics.put( EcsServiceScaler.METRIC_AVG_RX_RATE, getMessageReceiveRateFromQueueResponse(msgVpnQueueResponse) );
-        metrics.put( EcsServiceScaler.METRIC_SPOOL_USAGE, getMessageSpoolUsageFromQueueResponse(msgVpnQueueResponse ));
+        metrics.put( EcsServiceScaler.METRIC_MSG_COUNT, getMessageCountFromQueueResponse(sempQueueResponse) );
+        metrics.put( EcsServiceScaler.METRIC_AVG_RX_RATE, getMessageReceiveRateFromQueueResponse(sempQueueResponse) );
+        metrics.put( EcsServiceScaler.METRIC_SPOOL_USAGE, getMessageSpoolUsageFromQueueResponse(sempQueueResponse ));
         
         return metrics;
     }
@@ -62,9 +61,9 @@ public class SolaceQueueMonitorUtils {
      * @param msgVpnQueueResponse
      * @return
      */
-    public static Long getMessageCountFromQueueResponse( MsgVpnQueueResponse msgVpnQueueResponse ) {
+    public static Long getMessageCountFromQueueResponse( SempQueueResponse sempQueueResponse ) {
         try {
-            return msgVpnQueueResponse.getCollections().getMsgs().getCount();
+            return sempQueueResponse.getCollections().getMsgs().getCount();
         } catch ( Exception exc ) {
         }
         return null;
@@ -75,9 +74,9 @@ public class SolaceQueueMonitorUtils {
      * @param msgVpnQueueResponse
      * @return
      */
-    public static Long getMessageReceiveRateFromQueueResponse( MsgVpnQueueResponse msgVpnQueueResponse ) {
+    public static Long getMessageReceiveRateFromQueueResponse( SempQueueResponse sempQueueResponse ) {
         try {
-            return msgVpnQueueResponse.getData().getAverageRxMsgRate();
+            return sempQueueResponse.getData().getAverageRxMsgRate();
         } catch ( Exception exc ) {
         }
         return null;
@@ -88,9 +87,9 @@ public class SolaceQueueMonitorUtils {
      * @param msgVpnQueueResponse
      * @return
      */
-    public static Long getMessageSpoolUsageFromQueueResponse( MsgVpnQueueResponse msgVpnQueueResponse ) {
+    public static Long getMessageSpoolUsageFromQueueResponse( SempQueueResponse sempQueueResponse ) {
         try {
-            return msgVpnQueueResponse.getData().getMsgSpoolUsage();
+            return sempQueueResponse.getData().getMsgSpoolUsage();
         } catch ( Exception exc ) {
         }
         return null;

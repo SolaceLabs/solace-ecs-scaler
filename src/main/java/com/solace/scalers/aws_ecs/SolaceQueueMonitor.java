@@ -13,8 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-
-import io.swagger.client.model.MsgVpnQueueResponse;
+import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
 
 /**
  * Class SolaceQueueMonitor provides a facility to monitor queues for specific values
@@ -106,7 +105,7 @@ public class SolaceQueueMonitor {
      * @throws IOException
      * @throws JsonSyntaxException
      */
-    public synchronized MsgVpnQueueResponse getSempMonitorForQueue() throws IOException, JsonSyntaxException {
+    public synchronized SempQueueResponse getSempMonitorForQueue() throws IOException, JsonSyntaxException {
         
         HttpURLConnection connection = ( HttpURLConnection )url.openConnection();
         
@@ -150,14 +149,14 @@ public class SolaceQueueMonitor {
         // Parse the result and return as object
         // TODO - Define customer object instead of using SEMPv2 generated classes?
         Gson gson = new Gson();
-        return gson.fromJson(content.toString(), MsgVpnQueueResponse.class);
+        return gson.fromJson(content.toString(), SempQueueResponse.class);
     }
 
     /**
      * Formats HTTP Authorization header from username and password
      * @param userName
      * @param password
-     * @return
+     * @return Base64 encoded Http Basic Auth Header
      */
     public static String formatHttpBasicAuthHeader( String userName, String password) {
         if ( userName == null || password == null ) {
