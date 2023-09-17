@@ -1,0 +1,77 @@
+
+a	java:S112ş"FDefine and throw a dedicated exception instead of using a generic one.(×èà‡øÿÿÿÿ
+p
+java:S2293Æ"YReplace the type specification in this constructor call with the diamond operator ("<>").(çÈ¿
+p
+java:S2293Ç"YReplace the type specification in this constructor call with the diamond operator ("<>").(Ë¿†
+g	java:S117‰"QRename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(Œé¤ì
+:
+java:S2629W"$Invoke method(s) only conditionally.(œØáÍ
+:
+java:S2629k"$Invoke method(s) only conditionally.(œØáÍ
+:
+java:S2629r"$Invoke method(s) only conditionally.(œØáÍ
+:
+java:S2629y"$Invoke method(s) only conditionally.(œØáÍ
+;
+java:S2629Á"$Invoke method(s) only conditionally.(ş—ôú
+;
+java:S2629"$Invoke method(s) only conditionally.(œØáÍ
+;
+java:S2629—"$Invoke method(s) only conditionally.(ş—ôú
+;
+java:S2629œ"$Invoke method(s) only conditionally.(œØáÍ
+;
+java:S2629¤"$Invoke method(s) only conditionally.(ş—ôú
+;
+java:S2629©"$Invoke method(s) only conditionally.(œØáÍ
+;
+java:S2629¯"$Invoke method(s) only conditionally.(œØáÍ
+s
+java:S2629»"\Invoke method(s) only conditionally. Use the built-in formatting to construct this argument.(Šá‚Í
+;
+java:S2629Ä"$Invoke method(s) only conditionally.(œØáÍ
+;
+java:S2629Ç"$Invoke method(s) only conditionally.(œØáÍ
+;
+java:S2629İ"$Invoke method(s) only conditionally.(œØáÍ
+W
+java:S4973w"<Strings and Boxed types should be compared using "equals()".(­ö èùÿÿÿÿ
+e
+java:S1659"ODeclare "METRIC_AVG_RX_RATE" and all following declarations on a separate line.(úİãß
+m
+java:S3077$"WUse a thread-safe type; adding "volatile" is not enough to make this field thread-safe.(ãÃÂ¹
+M
+java:S1135"2Complete the task associated to this TODO comment.(®‘ö”ùÿÿÿÿ
+H
+java:S1135"2Complete the task associated to this TODO comment.(Ü™Îã
+m
+java:S3776e"RRefactor this method to reduce its Cognitive Complexity from 25 to the 15 allowed.(¾¾ÕÔşÿÿÿÿ
+H
+java:S1659…",Declare "computeScaleIn" on a separate line.(«²×éüÿÿÿÿ
+v
+java:S1659ˆ"_Declare "maxAverageMessageRateObservationUp" and all following declarations on a separate line.(¬Ü
+s
+java:S1659"WDeclare "foundWindowObservationDown" and all following declarations on a separate line.(¿®‹‰ÿÿÿÿÿ
+N
+java:S1659‘"2Declare "ScaleInMetricHorizon" on a separate line.(¨×¨øÿÿÿÿ
+Q
+java:S1659•":Declare "newestMessageRateObservation" on a separate line.(áĞÈ
+H
+java:S1135h"2Complete the task associated to this TODO comment.(²•Èİ
+N
+java:S1135®"2Complete the task associated to this TODO comment.(¿Ñ’°øÿÿÿÿ
+i
+java:S3776ú"RRefactor this method to reduce its Cognitive Complexity from 18 to the 15 allowed.(ıõÿÍ
+I
+java:S1659"-Declare "scaleInDecision" on a separate line.(ùŠßÇşÿÿÿÿ
+X
+java:S3457»"AFormat specifiers should be used instead of string concatenation.(Šá‚Í
+H
+java:S1135¿"2Complete the task associated to this TODO comment.(‚ûÛ@
+N
+java:S1135À"2Complete the task associated to this TODO comment.(Â†æÊüÿÿÿÿ
+C
+java:S1125ñ"'Remove the unnecessary boolean literal.(«÷Öúÿÿÿÿ
+N
+java:S1135š"2Complete the task associated to this TODO comment.(ÍÜ±¶üÿÿÿÿ

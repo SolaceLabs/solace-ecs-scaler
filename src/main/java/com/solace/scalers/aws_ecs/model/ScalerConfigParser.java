@@ -18,16 +18,14 @@ import com.solace.scalers.aws_ecs.model.ScalerConfig.ScalerBehaviorConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.ScalerOperation;
 import com.solace.scalers.aws_ecs.util.LogUtils;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * Class to parse and validate the Solace ECS Scaler Configuration File
  * Static methods only
  */
+@Log4j2
 public class ScalerConfigParser {
-
-    private static final Logger logger = LogManager.getLogger( ScalerConfigParser.class );  // log4j2, but could also use SLF4J, JCL, etc.
 
     /**
      * Parse Solace ECS Scaler configuration file
@@ -43,17 +41,17 @@ public class ScalerConfigParser {
         try {
         	scalerConfig = mapper.readValue(new File(configFile), ScalerConfig.class);
         } catch (DatabindException dbexc) {
-        	logger.error("Failed to parse the config file: {}", dbexc.getMessage());
-            logger.error(dbexc.getStackTrace());
+        	log.error("Failed to parse the config file: {}", dbexc.getMessage());
+            log.error(dbexc.getStackTrace());
             throw dbexc;
 		} catch (StreamReadException srexc ) {
-        	logger.error("Failed to parse the config file: {}", srexc.getMessage());
-            logger.error(srexc.getStackTrace());
+        	log.error("Failed to parse the config file: {}", srexc.getMessage());
+            log.error(srexc.getStackTrace());
         	throw srexc;
 		} catch (IOException ioexc) {
-			logger.error("There was an error reading the input file: {}", configFile);
-			logger.error(ioexc.getMessage());
-            logger.error(ioexc.getStackTrace());
+			log.error("There was an error reading the input file: {}", configFile);
+			log.error(ioexc.getMessage());
+            log.error(ioexc.getStackTrace());
         	throw ioexc;
 		}
 
@@ -71,11 +69,11 @@ public class ScalerConfigParser {
         int errorCount = 0;
 
         if ( scalerConfig.getEcsServiceConfig().size() < 1 ) {
-            logger.error("At least one [ecsServiceConfig] entry is required");
+            log.error("At least one [ecsServiceConfig] entry is required");
             return null;
         }
         if ( scalerConfig.getEcsServiceConfig().size() > 100 ) {
-            logger.error("Too many scaled apps in the configuration: {}. " + 
+            log.error("Too many scaled apps in the configuration: {}. " + 
                             "Maximum number of scaled applications for the Scaler is 100.",
                             scalerConfig.getEcsServiceConfig().size() );
         }
@@ -91,14 +89,14 @@ public class ScalerConfigParser {
             // Min replicas >= 1
             if ( scalerBehaviorConfig.getMinReplicaCount() < 1 ) {
                 errorCount++;
-                logger.error("service={} minReplicaCount must be > 0", 
+                log.error("service={} minReplicaCount must be > 0", 
                                 LogUtils.getServiceDesignation(ecsServiceConfig));
             }
 
             // Max Replicas > min replicas
             if ( scalerBehaviorConfig.getMaxReplicaCount() <= scalerBehaviorConfig.getMinReplicaCount() ) {
                 errorCount++;
-                logger.error("service={} maxReplicatCount must be > minReplicaCount", 
+                log.error("service={} maxReplicatCount must be > minReplicaCount", 
                                 LogUtils.getServiceDesignation(ecsServiceConfig));
             }
 
@@ -107,7 +105,7 @@ public class ScalerConfigParser {
             if ( scalerBehaviorConfig.getMessageCountTarget() < 0 ||
                 scalerBehaviorConfig.getMessageReceiveRateTarget() < 0 ||
                 scalerBehaviorConfig.getMessageSpoolUsageTarget() < 0 ) {
-                    logger.error("service={} Metric values must be >= 0", 
+                    log.error("service={} Metric values must be >= 0", 
                                 LogUtils.getServiceDesignation(ecsServiceConfig) );
                     errorCount++;
             }
@@ -118,7 +116,7 @@ public class ScalerConfigParser {
                 // Uncomment if implementing messageSpoolUsageTarget:
                 // && scalerBehaviorConfig.getMessageSpoolUsageTarget() == 0
                 ) {
-                    logger.error("service={} At least one metric value must be > 0 for each service", 
+                    log.error("service={} At least one metric value must be > 0 for each service", 
                                     LogUtils.getServiceDesignation(ecsServiceConfig) );
                     errorCount++;
             }
@@ -134,12 +132,12 @@ public class ScalerConfigParser {
             // Validate that scaler operations are >= 0
             if ( !validateScalerOperation( scalerBehaviorConfig.getScaleInConfig() ) ) {
                 errorCount++;
-                logger.error( "service={} ScaleIn Config: cooldownPeriod, maxScaleStep, stabilizationWindow values must be >= 0", 
+                log.error( "service={} ScaleIn Config: cooldownPeriod, maxScaleStep, stabilizationWindow values must be >= 0", 
                                     LogUtils.getServiceDesignation(ecsServiceConfig) );
             }
             if ( !validateScalerOperation( scalerBehaviorConfig.getScaleOutConfig() ) ) {
                 errorCount++;
-                logger.error( "service={} ScaleOut Config: cooldownPeriod, maxScaleStep, stabilizationWindow values must be >= 0", 
+                log.error( "service={} ScaleOut Config: cooldownPeriod, maxScaleStep, stabilizationWindow values must be >= 0", 
                                     LogUtils.getServiceDesignation(ecsServiceConfig) );
             }
 
@@ -152,16 +150,16 @@ public class ScalerConfigParser {
         List<String> duplicateServices = findDuplicatesInList( services );
 
         for ( String s : duplicateQueues ) {
-            logger.error( "Found duplicate queueName == [{}] in configuration", s );
+            log.error( "Found duplicate queueName == [{}] in configuration", s );
             errorCount++;
         }
         for ( String s : duplicateServices ) {
-            logger.error( "Found duplicate Service Name == [{}] in configuration", s );
+            log.error( "Found duplicate Service Name == [{}] in configuration", s );
             errorCount++;
         }
 
         if ( errorCount > 0 ) {
-            logger.error( "There were {} validation errors detected in the configuration", errorCount );
+            log.error( "There were {} validation errors detected in the configuration", errorCount );
             throw new Exception(String.format("There were %d validation errors detected in the configuration", errorCount));
         }
         return scalerConfig;

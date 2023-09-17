@@ -1,0 +1,8 @@
+
+a	java:S112£"FDefine and throw a dedicated exception instead of using a generic one.(ÀûÅ†ýÿÿÿÿ
+\
+java:S1118":Add a private constructor to hide the implicit public one.(÷ö¿éúÿÿÿÿ8ý½°Û©1
+o
+java:S3776C"RRefactor this method to reduce its Cognitive Complexity from 24 to the 15 allowed.( ÈÏŒ8“¾°Û©1
+]
+java:S1126Â"AReplace this if-then-else statement by a single return statement.(€ê€çøÿÿÿÿ

@@ -8,14 +8,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.solace.scalers.aws_ecs.model.ScalerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfigParser;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
 import com.solace.scalers.aws_ecs.util.LogUtils;
 import com.solace.scalers.aws_ecs.util.SolaceQueueMonitorUtils;
+
+import lombok.extern.log4j.Log4j2;
 
 /**
  * Class to scale ECS Services for applications bound to Solace Queues
@@ -23,6 +22,7 @@ import com.solace.scalers.aws_ecs.util.SolaceQueueMonitorUtils;
  * - Obtains ECS service task counts from Cloudwatch
  * - Scales applications based on observations and configuration settings
  */
+@Log4j2
 public class SolaceEcsAutoscalerApp 
 {
     private static final long       INIT_POLLING_DELAY_SEMP = 5L,
@@ -39,8 +39,6 @@ public class SolaceEcsAutoscalerApp
 
     // shutdown if set to false
     private static volatile boolean isRunning = true;
-
-    private static final Logger logger = LogManager.getLogger( SolaceEcsAutoscalerApp.class );  // log4j2, but could also use SLF4J, JCL, etc.
 
     /**
      * Accepts a config file in format defined by ScalerConfig --> --config-file=path/to/file.properties
@@ -67,11 +65,11 @@ public class SolaceEcsAutoscalerApp
                                     ScalerConfigParser.parseScalerConfig( configFile )
                                 );
         } catch ( Exception exc ) {
-            logger.error( "Could not parse scaler config at: {} -- Exiting", configFile );
+            log.error( "Could not parse scaler config at: {} -- Exiting" );
             System.exit(1);
         }
 
-        logger.info("Starting Solace/ECS Scaler -- Monitoring Solace Messaging Service at URL: {} / MsgVpn: {}", 
+        log.info("Starting Solace/ECS Scaler -- Monitoring Solace Messaging Service at URL: {} / MsgVpn: {}",
                             scalerConfig.getBrokerConfig().getBrokerSempUrl(), 
                             scalerConfig.getBrokerConfig().getMsgVpnName());
 
@@ -98,12 +96,12 @@ public class SolaceEcsAutoscalerApp
                                     ecsServiceConfig.getQueueName(), 
                                     new EcsServiceMetrics(ecsServiceConfig)
                                 );
-                logger.info( "Configured Scaler for Service={} -- on Solace Queue: {}", 
+                log.info( "Configured Scaler for Service={} -- on Solace Queue: {}",
                                 LogUtils.getServiceDesignation(ecsServiceConfig), ecsServiceConfig.getQueueName() );
             } catch ( Exception exc ) {
-                logger.error("Error configuring Scaler for Service={} on Solace Queue: {}",
+                log.error("Error configuring Scaler for Service={} on Solace Queue: {}",
                                 LogUtils.getServiceDesignation(ecsServiceConfig), ecsServiceConfig.getQueueName());
-                logger.error("Exiting Program");
+                log.error("Exiting Program");
                 throw exc;
             }
         }
@@ -125,16 +123,16 @@ public class SolaceEcsAutoscalerApp
                 try {
                     Map<String, Long> metricsEntry = SolaceQueueMonitorUtils.getQueueMetricsFromQueueResponse( entry.getValue().getSempMonitorForQueue() );
                     ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getMetricObservations().put( System.currentTimeMillis(), metricsEntry );
-                    logger.info( "Service={} -- Stored Metrics: {}: {}, {}: {}, {}: {}", 
+                    log.info( "Service={} -- Stored Metrics: {}: {}, {}: {}, {}: {}",
                                 LogUtils.getServiceDesignation( ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getEcsServiceConfig() ),
                                 EcsServiceScaler.METRIC_MSG_COUNT, metricsEntry.get(EcsServiceScaler.METRIC_MSG_COUNT),
                                 EcsServiceScaler.METRIC_AVG_RX_RATE, metricsEntry.get(EcsServiceScaler.METRIC_AVG_RX_RATE),
                                 EcsServiceScaler.METRIC_SPOOL_USAGE, metricsEntry.get(EcsServiceScaler.METRIC_SPOOL_USAGE) );
                 } catch ( Exception exc ) {
-                    logger.error( "Service={} -- Error Obtaining/Storing Metrics -- Exception: {}",
+                    log.error( "Service={} -- Error Obtaining/Storing Metrics -- Exception: {}",
                                 LogUtils.getServiceDesignation( ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getEcsServiceConfig() ),
                                 exc.getMessage() );
-                    logger.error( "Exiting" );
+                    log.error( "Exiting" );
                     isRunning = false;
                 }
             }
@@ -166,7 +164,7 @@ public class SolaceEcsAutoscalerApp
             public void run() {
                 isRunning = false;
                 try {
-                    logger.info("*** Shutdown Signal Detected -- Shutting Down Scaler ***");
+                    log.info("*** Shutdown Signal Detected -- Shutting Down Scaler ***");
                     Thread.sleep(SHUTDOWN_THREAD_DELAY_MILLIS);
                     if (!purgeMetricsThread.isShutdown()) {
                         purgeMetricsThread.shutdown();
@@ -193,9 +191,9 @@ public class SolaceEcsAutoscalerApp
         boolean isScaling = false;
         while ( !isScaling && isRunning ) {
             if ( System.currentTimeMillis() < initializationDelay ) {
-                logger.info( "Metrics are initializing, no scaling operations will be performed" );
+                log.info( "Metrics are initializing, no scaling operations will be performed" );
             } else {
-                logger.info( "Metrics initialization complete -- Going Active!" );
+                log.info( "Metrics initialization complete -- Going Active!" );
                 isScaling = true;
             }
             // TODO - make this value configurable -- initializationPeriod
@@ -213,7 +211,7 @@ public class SolaceEcsAutoscalerApp
                             ecsServiceMetricsMap.get(ecsServiceScalerEntry.getKey()).getDesiredTaskCount(), 
                             ecsServiceMetricsMap.get(ecsServiceScalerEntry.getKey()).getRunningTaskCount() );
                 } catch ( Exception exc ) {
-                    logger.warn( "Service={} -- Caught exception from ECS Service Scaler -- Shutting down", LogUtils.getServiceDesignation(ecsServiceScalerEntry.getValue().getEcsServiceConfig()) );
+                    log.warn( "Service={} -- Caught exception from ECS Service Scaler -- Shutting down", LogUtils.getServiceDesignation(ecsServiceScalerEntry.getValue().getEcsServiceConfig()) );
                     isRunning = false;
                 }
             }

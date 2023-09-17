@@ -8,9 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Base64;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import lombok.extern.log4j.Log4j2;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
@@ -23,10 +21,8 @@ import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
  * TODO - Add configurable ability to skip SSL certificate-host verification
  * TODO - Define and add logic to better handle http failures
  */
+@Log4j2
 public class SolaceQueueMonitor {
-    
-    private static final Logger logger = LogManager.getLogger(SolaceQueueMonitor.class);
-
     private static final String SEMP_URL_QUERY_STRING = "?select=msgs.count,msgVpnName,queueName,msgSpoolUsage,averageRxMsgRate,averageTxMsgRate",
                                 SEMP_URL_FORMAT       = "%s/SEMP/v2/monitor/msgVpns/%s/queues/%s%s";
 
@@ -123,9 +119,9 @@ public class SolaceQueueMonitor {
 
         int responseCode = connection.getResponseCode();
         if (responseCode < 200 || responseCode > 204 ) {
-            logger.error( "QueueName={} -- Call to SEMP responseCode = {}", 
+            log.error( "QueueName={} -- Call to SEMP responseCode = {}", 
                             queueName, responseCode );
-            logger.error( "QueueName={} -- SEMP Response Message: {}", 
+            log.error( "QueueName={} -- SEMP Response Message: {}", 
                             queueName, connection.getResponseMessage() );
             connection.disconnect();
             throw new IOException( 

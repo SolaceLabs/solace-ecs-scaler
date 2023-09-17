@@ -1,0 +1,27 @@
+
+]	java:S125"<This block of commented-out lines of code should be removed.(à—¼ñùÿÿÿÿ8„¼Ë¤ª1
+w
+java:S1659 "UDeclare "INIT_POLLING_DELAY_PURGE" and all following declarations on a separate line.(í’Û±ÿÿÿÿÿ8…¼Ë¤ª1
+{
+java:S1659$"YDeclare "POLLING_INTERVAL_ECS_METRICS" and all following declarations on a separate line.(—¥ùüÿÿÿÿ8…¼Ë¤ª1
+o
+java:S37767"RRefactor this method to reduce its Cognitive Complexity from 50 to the 15 allowed.(Çó™ç8‡¼Ë¤ª1
+–
+java:S11307"yRemove the declaration of thrown exception 'java.net.MalformedURLException' which is a subclass of 'java.io.IOException'.(Çó™ç8ˆ¼Ë¤ª1
+E
+java:S1905‘"'Remove this unnecessary cast to "long".(şÚ™÷8İÿÒ¤ª1
+P
+java:S1135"2Complete the task associated to this TODO comment.(Ñ³õ8ŞÿÒ¤ª1
+X
+java:S1161©":Add the "@Override" annotation above this method signature(“–ış8ßÿÒ¤ª1
+
+java:S2142·"^Either re-interrupt this method or rethrow the "InterruptedException" that can be caught here.(‚¦¡ûûÿÿÿÿ8ßÿÒ¤ª1
+K	java:S108·")Either remove or fill this block of code.(‚¦¡ûûÿÿÿÿ8àÿÒ¤ª1
+E
+java:S1905Ã"'Remove this unnecessary cast to "long".(ú›„Æ8àÿÒ¤ª1
+P
+java:S1135Ì"2Complete the task associated to this TODO comment.(¦‰æ÷8áÿÒ¤ª1
+U
+java:S1135Ñ"2Complete the task associated to this TODO comment.(ßî¥Õşÿÿÿÿ8áÿÒ¤ª1
+P
+java:S1135ã"2Complete the task associated to this TODO comment.(‘Ê8¼Ë¤ª1
