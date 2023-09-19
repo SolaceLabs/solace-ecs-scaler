@@ -4,6 +4,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,6 +21,7 @@ import com.amazonaws.services.cloudwatch.model.StandardUnit;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
 import com.solace.scalers.aws_ecs.util.LogUtils;
 
+
 /**
  * Class designed to retrieve Desired and Running Task Counts from AWS CloudWatch
  * from ECS/ContainerInsights. Requires that these metrics are enabled
@@ -30,6 +32,7 @@ import com.solace.scalers.aws_ecs.util.LogUtils;
  * CPU and Memory utilization. These must be treated as data points and stored for
  * a configurable window. Whereas replica counts can continue to be treated as scalars.
  */
+@Log4j2
 public class EcsServiceMetrics {
     
     public static final String  CW_ECS_NAMESPACE                = "ECS/ContainerInsights",
@@ -41,8 +44,7 @@ public class EcsServiceMetrics {
 
     public static final Integer CW_METRIC_RESOLUTION_PERIOD     = 60;
 
-    private static final Logger logger = LogManager.getLogger( EcsServiceMetrics.class );
-
+   
     // TODO - Evaluate if AmazonCloudWatch default client config is sufficient for production
     private static final AmazonCloudWatch cw = AmazonCloudWatchClientBuilder.defaultClient();
 
@@ -83,9 +85,9 @@ public class EcsServiceMetrics {
         startTime.setTime( endTime.getTime() );
         startTime.add( Calendar.MINUTE, -8 );
 
-        logger.debug("Service={} -- Retrieving AWS CloudWatch metrics from ECS", 
+        log.debug("Service={} -- Retrieving AWS CloudWatch metrics from ECS", 
                             LogUtils.getServiceDesignation(ecsServiceConfig));
-        logger.debug("Service={} -- Metric Query: Start time={} End Time={}", 
+        log.debug("Service={} -- Metric Query: Start time={} End Time={}", 
                             LogUtils.getServiceDesignation(ecsServiceConfig),
                             startTime.getTime(), 
                             endTime.getTime());
@@ -98,16 +100,16 @@ public class EcsServiceMetrics {
         GetMetricDataResult metricResult = cw.getMetricData( metricRequest );
 
         if ( metricResult == null || metricResult.getSdkHttpMetadata() == null ) {
-            logger.error( "Service={} -- Could not retrieve ECS metrics from CloudWatch; Credentials initialized?",
+            log.error( "Service={} -- Could not retrieve ECS metrics from CloudWatch; Credentials initialized?",
                             LogUtils.getServiceDesignation(ecsServiceConfig) );
         }
 
-        logger.debug( "Service={} -- HTTP Status Code: {}", 
+        log.debug( "Service={} -- HTTP Status Code: {}", 
                             LogUtils.getServiceDesignation(ecsServiceConfig),
                             metricResult.getSdkHttpMetadata().getHttpStatusCode() );
 
         if ( metricResult.getMetricDataResults() == null ) {
-            logger.warn("Service={} -- Results returned no data",
+            log.warn("Service={} -- Results returned no data",
                             LogUtils.getServiceDesignation(ecsServiceConfig));
             return;
         }
@@ -115,9 +117,9 @@ public class EcsServiceMetrics {
         Iterator<MetricDataResult> it = metricResult.getMetricDataResults().iterator();
 
         if ( it == null || !it.hasNext() ) {
-            logger.warn("Service={} -- Call to AWS Cloudwatch for ECS did not return metric data",
+            log.warn("Service={} -- Call to AWS Cloudwatch for ECS did not return metric data",
                             LogUtils.getServiceDesignation(ecsServiceConfig));
-            logger.warn("Service={} -- Scaling will be prevented until a successful call for the task counts is made",
+            log.warn("Service={} -- Scaling will be prevented until a successful call for the task counts is made",
                             LogUtils.getServiceDesignation(ecsServiceConfig));
 
             // Prevent Scaling Operations
@@ -138,10 +140,10 @@ public class EcsServiceMetrics {
 
             MetricDataResult result = it.next();
 
-            logger.debug( "Service={} -- Number of timestamps == {}", 
+            log.debug( "Service={} -- Number of timestamps == {}", 
                             LogUtils.getServiceDesignation(ecsServiceConfig),
                             result.getTimestamps().size() );
-            logger.debug("Service={} -- Most recent datapoint Time={} -- Boundary Time={}", 
+            log.debug("Service={} -- Most recent datapoint Time={} -- Boundary Time={}", 
                                 LogUtils.getServiceDesignation(ecsServiceConfig),
                                 ( result.getTimestamps().size() > 0 ? result.getTimestamps().get(0) : "NONE" ), 
                                 timeBoundary.getTime() );
@@ -165,11 +167,11 @@ public class EcsServiceMetrics {
          * This is the same result that would be returned for a query to a non-existent service.
          */
         if ( running == null || desired == null ) {
-            logger.warn("Service={} -- Retrieved desiredTaskCount={}; runningTaskCount={} from ECS Cloudwatch -- One or both values is NULL; Scaling operations will be prevented", 
+            log.warn("Service={} -- Retrieved desiredTaskCount={}; runningTaskCount={} from ECS Cloudwatch -- One or both values is NULL; Scaling operations will be prevented", 
                                 LogUtils.getServiceDesignation(ecsServiceConfig),
                                 desired, running);
         } else {
-            logger.info("Service={} -- Retrieved desiredTaskCount={}; runningTaskCount={} from ECS CloudWatch", 
+            log.info("Service={} -- Retrieved desiredTaskCount={}; runningTaskCount={} from ECS CloudWatch", 
                                 LogUtils.getServiceDesignation(ecsServiceConfig),
                                 desired, running);
         }
