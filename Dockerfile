@@ -1,7 +1,7 @@
 ## Dockerfile for Solace ECS Service Scaler
 ## --> Requires config file mounted as volume to /opt/ecs-scaler/config.yaml
 
-FROM openjdk:17.0.2-jdk
+FROM eclipse-temurin:17
 
 RUN mkdir -p /opt/ecs-scaler
 RUN chmod 777 /opt/ecs-scaler
