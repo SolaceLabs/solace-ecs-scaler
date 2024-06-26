@@ -83,6 +83,9 @@ java -jar target/solace-ecs-scaler-1.0.0-jar-with-dependencies.jar --config-file
 ```
 The `configuration.yaml` file is required. This is where you set Solace Broker connection details, identify queues and services, and specify metric settings. See below for details about the configuration file.
 
+The jar expects a /healthz directory to be available from the working directory. This App will create a temporary file for
+use as a healthcheck when deployed in containerized environments.
+
 ### Disable SSL Hostname Check (NOT RECOMMENDED)
 
 Start the program from a command line with JVM option set to bypass SSL hostname verification.
