@@ -10,7 +10,7 @@
 
   <name>solace-ecs-scaler</name>
   <!-- FIXME change it to the project's website -->
-  <url>https://github.com/dennis-brinley/solace-ecs-scaler</url>
+  <url>https://github.com/SolaceLabs/solace-ecs-scaler</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
