@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import com.solace.scalers.aws_ecs.model.ScalerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfigParser;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
+import com.solace.scalers.aws_ecs.util.HealthUtil;
 import com.solace.scalers.aws_ecs.util.LogUtils;
 import com.solace.scalers.aws_ecs.util.SolaceQueueMonitorUtils;
 
@@ -203,6 +204,8 @@ public class SolaceEcsAutoscalerApp
         // MAIN THREAD -- Scaling Operations
         // TODO - Make scaling operation cycle configurable (currently 10 seconds)
         while ( isRunning ) {
+            // Creates tmp healthcheck file
+            HealthUtil.updateHealthStatus(isRunning);
 
             for ( Map.Entry<String, EcsServiceScaler> ecsServiceScalerEntry : ecsServiceScalerMap.entrySet() ) {
                 try {
@@ -217,7 +220,11 @@ public class SolaceEcsAutoscalerApp
             }
 
             // Exit before thread sleep if done
-            if ( !isRunning ) break;
+            if ( !isRunning ) {
+                // Delete tmp healthcheck file
+                HealthUtil.updateHealthStatus(isRunning);
+                break;
+            }
             
             // TODO - make this value configurable -- scaler interval
             Thread.sleep(SCALING_OPERATION_INTERVAL_MILLIS);
