@@ -40,7 +40,7 @@ There is an Scaling Adjustment factor that is applied for scale down operations.
 # Requirements
 
 - **Basic System**
-    - Java 11+
+    - Java 17+
     - Maven (version 3.8+ Recommended)
     - **Optional** Docker Desktop/Engine if using container
 - **AWS Environment**
