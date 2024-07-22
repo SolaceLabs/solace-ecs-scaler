@@ -3,11 +3,13 @@ package com.solace.scalers.aws_ecs;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
 import java.util.Base64;
+import java.util.Map;
+import java.util.Optional;
 
+import com.solace.scalers.aws_ecs.model.ScalerConfig;
+import com.solace.scalers.aws_ecs.model.semp_v2.SempMessageVpnStateResponse;
 import lombok.extern.log4j.Log4j2;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -24,15 +26,16 @@ import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
 @Log4j2
 public class SolaceQueueMonitor {
     private static final String SEMP_URL_QUERY_STRING = "?select=msgs.count,msgVpnName,queueName,msgSpoolUsage,averageRxMsgRate,averageTxMsgRate",
-                                SEMP_URL_FORMAT       = "%s/SEMP/v2/monitor/msgVpns/%s/queues/%s%s";
+                                SEMP_URL_FORMAT       = "%s/SEMP/v2/monitor/msgVpns/%s/queues/%s%s",
+                                SEMP_VPN_STATE_FORMAT = "%s/SEMP/v2/monitor/msgVpns/%s" + "?select=state";
 
-    private URL url = null;
+    private Map<String,ScalerConfig.SempConfig> sempConfigMap;
 
-    private String username = "";
-
-    private String password = "";
+    private String messageVpnName = "";
 
     private String queueName = "";
+
+    private int numFailedRequestsInARow = 0;
 
     /**
      * Get queueName associated with this object
@@ -50,88 +53,158 @@ public class SolaceQueueMonitor {
         this.queueName = queueName;
     }
 
-    /**
-     * Returns URL object for this instance of the class. Returns NULL if the URL has not
-     * been initialized
-     * @return
-     */
-    public URL getUrl() {
-        return this.url;
+
+    public Map<String, ScalerConfig.SempConfig> getSempConfigMap() {
+        return sempConfigMap;
     }
 
-    /**
-     * Set User Name for HTTP basic auth
-     * @param userName
-     */
-    public void setUsername(String userName) {
-        this.username = userName;
+    public void setSempConfigMap(Map<String, ScalerConfig.SempConfig> sempConfigMap) {
+        this.sempConfigMap = sempConfigMap;
     }
 
-    /**
-     * Set Password for HTTP basic auth
-     * @param password
-     */
-    public void setPassword(String password) {
-        this.password = password;
+    public String getMessageVpnName() {
+        return messageVpnName;
     }
 
-    public static String formatUrl( 
+    public void setMessageVpnName(String messageVpnName) {
+        this.messageVpnName = messageVpnName;
+    }
+
+
+    public static String formatQueueMonitorUrl(
                 String brokerSempUrl,
                 String msgVpnName, 
                 String queueName ) {
         return
             String.format( SEMP_URL_FORMAT, brokerSempUrl, msgVpnName, queueName, SEMP_URL_QUERY_STRING );
     }
+
+    public static String formatVpnStateUrl(String brokerSempUrl,
+                                           String msgVpnName) {
+        return String.format(SEMP_VPN_STATE_FORMAT, brokerSempUrl, msgVpnName);
+    }
     
     /**
      * Constructor can be used to pass a URL as string to the object. 
-     * @param url
+     * @param sempConfigMap
      * @throws MalformedURLException
      */
-    public SolaceQueueMonitor( String url, String queueName ) throws MalformedURLException {
-        this.url = new URL( url );
+    public SolaceQueueMonitor(Map<String, ScalerConfig.SempConfig> sempConfigMap, String messageVpnName, String queueName ) throws MalformedURLException {
+        this.sempConfigMap = sempConfigMap;
+        this.messageVpnName = messageVpnName;
         this.queueName = queueName;
     }
 
     /**
-     * Executes a call to SEMP to retrieve a monitoring record for the queue found
+     * Determines the active message vpn for the given broker configuration.
+     * Executes a call to SEMP for the active vpn to retrieve a monitoring record for the queue found
      * at the configured endpoint. Returns an Object of type `MsgVpnQueueResponse`
      * defined by the SEMPv2 OpenAPI spec
      * @return
      * @throws IOException
      * @throws JsonSyntaxException
      */
-    public synchronized SempQueueResponse getSempMonitorForQueue() throws IOException, JsonSyntaxException {
-        
-        HttpURLConnection connection = ( HttpURLConnection )url.openConnection();
-        
+    public synchronized SempQueueResponse getSempMonitorForQueue() throws IOException, JsonSyntaxException, URISyntaxException {
+        updateActiveVpnForForQueueMonitor();
+
+        Optional<String> optionalQueueMonitorResponse = getSempResponse(formatQueueMonitorUrl(sempConfigMap.get("active").getBrokerSempUrl(), messageVpnName, queueName), sempConfigMap.get("active").getUsername(), sempConfigMap.get("active").getPassword());
+
+        if(optionalQueueMonitorResponse.isPresent()) {
+            numFailedRequestsInARow = 0;
+            // Parse the result and return as object
+            // TODO - Define customer object instead of using SEMPv2 generated classes?
+            Gson gson = new Gson();
+            return gson.fromJson(optionalQueueMonitorResponse.get(), SempQueueResponse.class);
+        } else {
+            numFailedRequestsInARow++;
+            // TODO: Make number of requests in a row configurable
+            if(numFailedRequestsInARow > 5) {
+                throw new IOException("Failed to fetch queue statistics from active broker for 5 separate intervals. Please confirm Broker Semp Configuration.");
+            }
+            return new SempQueueResponse();
+        }
+    }
+
+    /**
+     * Updates the Active Message VPN to use when fetching queue monitoring statistics
+     * @throws URISyntaxException
+     * @throws IOException
+     */
+    public synchronized void updateActiveVpnForForQueueMonitor() throws URISyntaxException, IOException {
+        Optional<SempMessageVpnStateResponse> optionalMessageVpnStateResponse = getVpnStateForSempConfig(sempConfigMap.get("active"));
+        if(optionalMessageVpnStateResponse.isEmpty() || !optionalMessageVpnStateResponse.get().getData().getState().equals("up")) {
+            log.info("SempUrl={} -- Unable to fetch Message VPN State from Active SEMP Config. Trying Standby", sempConfigMap.get("active").getBrokerSempUrl());
+            if(sempConfigMap.get("standby") != null) {
+                optionalMessageVpnStateResponse = getVpnStateForSempConfig(sempConfigMap.get("standby"));
+                if(optionalMessageVpnStateResponse.isPresent() && optionalMessageVpnStateResponse.get().getData().getState().equals("up")) {
+                    // Update active vpn so that we check it first on the next interval
+                    ScalerConfig.SempConfig prevActiveVpn = sempConfigMap.get("active");
+                    sempConfigMap.put("active", sempConfigMap.get("standby"));
+                    sempConfigMap.put("standby", prevActiveVpn);
+                } else {
+                    // TODO: update to fail after X number of failed attempts in a row
+                    log.error("MessageVPN={} -- Neither Message VPN is currently up. Skipping retrieval of Queue Metrics", messageVpnName);
+                }
+            }
+        }
+    }
+
+    /**
+     * Retrieves the state of the given message vpn. Enables Scaler app to continue running in the event of a broker DR failover
+     * @param sempConfig
+     * @return
+     * @throws URISyntaxException
+     * @throws IOException
+     */
+    public synchronized Optional<SempMessageVpnStateResponse> getVpnStateForSempConfig(ScalerConfig.SempConfig sempConfig) throws URISyntaxException, IOException {
+        Optional<String> optionalVpnStateResponse = getSempResponse(formatVpnStateUrl(sempConfig.getBrokerSempUrl(), messageVpnName), sempConfig.getUsername(), sempConfig.getPassword());
+
+        if(optionalVpnStateResponse.isPresent()) {
+            // Parse the result and return as object
+            Gson gson = new Gson();
+            return Optional.of(gson.fromJson(optionalVpnStateResponse.get(), SempMessageVpnStateResponse.class));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Executes Http GET request for the given url and basic auth params
+     * @param urlString
+     * @param username
+     * @param password
+     * @return
+     * @throws IOException
+     * @throws URISyntaxException
+     */
+    public synchronized Optional<String> getSempResponse(String urlString, String username, String password) throws IOException, URISyntaxException {
+        HttpURLConnection connection = (HttpURLConnection) new URI(urlString).toURL().openConnection();
+
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
 
-        String authHeader = formatHttpBasicAuthHeader( this.username, this.password );
-        if ( authHeader != null ) {
+        String authHeader = formatHttpBasicAuthHeader(username, password);
+        if(authHeader != null ) {
             connection.setRequestProperty("Authorization", authHeader);
         }
-        connection.setConnectTimeout( 2500 );       // 2.5 seconds
+        connection.setConnectTimeout(2500);
 
-        // Connect and GET the data
         connection.connect();
 
         int responseCode = connection.getResponseCode();
         if (responseCode < 200 || responseCode > 204 ) {
-            log.error( "QueueName={} -- Call to SEMP responseCode = {}", 
-                            queueName, responseCode );
-            log.error( "QueueName={} -- SEMP Response Message: {}", 
-                            queueName, connection.getResponseMessage() );
+            // Issue with configuration or the broker service, throw exception to stop execution.
+            log.error( "MsgVpn={} -- Call to SEMP responseCode = {}",
+                    messageVpnName, responseCode );
+            log.error( "MsgVpn={} -- SEMP Response Message: {}",
+                    messageVpnName, connection.getResponseMessage() );
             connection.disconnect();
-            throw new IOException( 
-                        "SEMP: responseCode=" + responseCode + 
-                        " message=" + connection.getResponseMessage() );
+            return Optional.empty();
         }
 
         // Get data from the input stream
         BufferedReader in = new BufferedReader(
-            new InputStreamReader(connection.getInputStream()));
+                new InputStreamReader(connection.getInputStream()));
         String inputLine;
         StringBuffer content = new StringBuffer();
         while ((inputLine = in.readLine()) != null) {
@@ -142,10 +215,7 @@ public class SolaceQueueMonitor {
         // Close the connection
         connection.disconnect();
 
-        // Parse the result and return as object
-        // TODO - Define customer object instead of using SEMPv2 generated classes?
-        Gson gson = new Gson();
-        return gson.fromJson(content.toString(), SempQueueResponse.class);
+        return Optional.of(content.toString());
     }
 
     /**

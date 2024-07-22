@@ -22,7 +22,7 @@ The Solace ECS Scaler queries both the Solace Broker and ECS Service Task statis
     - Solace Queue Monitor --> Queries queue statistics from Solace SEMPv2
     - ECS Service Metrics --> Obtains desired and running replica counts from AWS Cloudwatch
     - ECS Service Scaler --> Stores metrics and scaler state for each application
-2. Start thread for Solace Queue Monitor - Gather metrics at **pollingInterval** seconds
+2. Start thread for Solace Queue Monitor - Gather metrics at **pollingInterval** seconds. Thread will confirm the vpn status of the active message vpn. If the vpn is down, the thread will attempt to retrieve statistics from the newly active vpn.
 3. Start thread for Ecs Service Metrics Gathering - Obtains most recent replica counts; runs at fixed interval
 4. Allow time for metrics to initialize
 5. Start scaling operations on main thread - determines if scaling operations are required; runs at fixed interval
@@ -50,6 +50,7 @@ There is an Scaling Adjustment factor that is applied for scale down operations.
     - **AWS Access:** AWS Key, Secret, and Region to establish connection and authorization to AWS
 - Solace Broker
     - SEMPv2 endpoint for your Solace Broker
+    - _Optional: SEMPv2 endpoint for Solace Broker configured as the Standby Broker in DR scenarios_
     - Basic Auth credentials with access to SEMPv2 monitoring endpoint
     - Application Queues defined as non-exclusive (with or without partitions)
 
@@ -125,13 +126,18 @@ AWS_DEFAULT_REGION=us-east-2
 Configuration is provided using a file in yaml format. The configuration file is referenced by the application using a command-line argument: `--config-file=path/to/config.yaml`
 
 There are two sections in the configuration file: 
-1. `brokerConfig` section to define Solace Broker connection details. There is one broker configurable per Scaler instance.
+1. `brokerConfig` section to define Solace Broker connection details. Options to configure a single broker or two brokers as DR pair.
 2. `ecsServiceConfig` section. This section is where the ECS Services, Solace Queues, and metrics are defined. Between 1 and 100 instances are valid.
 
 ## Broker Configuration
-- **brokerSempUrl** - Broker SEMP REST endpoint including protocol and port
-- **username** - SEMPv2 username with access to queue monitoring
-- **password** - password for the user name
+- **activeMsgVpnSempConfig** - Configuration for the standalone broker or the active broker in a DR pair
+  - **brokerSempUrl** - Broker SEMP REST endpoint including protocol and port
+  - **username** - SEMPv2 username with access to queue monitoring
+  - **password** - password for the user name
+- **standbyMsgVpnSempConfig** - Optional Configuration for the standby broker in a DR pair
+    - **brokerSempUrl** - Broker SEMP REST endpoint including protocol and port
+    - **username** - SEMPv2 username with access to queue monitoring
+    - **password** - password for the user name
 - **msgVpnName** - Solace PubSub+ Message VPN name
 - **pollingInterval** - Time in seconds between calls to SEMPv2 for the lates queue service metrics
 
@@ -175,11 +181,16 @@ AWS credentials must be configured external to the scaling component. This requi
 ```yaml
 ---
 brokerConfig:
-  brokerSempUrl: https://msgsvcabc123.messaging.solace.cloud:943
-  username: thisIsMe
-  password: secretPassword
+  activeMsgVpnSempConfig:
+    brokerSempUrl: http://my.solace.broker.com:943
+    username: activeUsername
+    password: password
+  standbyMsgVpnSempConfig:
+    brokerSempUrl: http://standby.solace.broker.com:943
+    username: activeUsername
+    password: password
   msgVpnName: testVpn
-  pollingInterval: 20              # frequency to poll metrics from SEMP in seconds
+  pollingInterval: 10           # frequency to poll metrics from SEMP in seconds
 ecsServiceConfig:
 - ecsCluster: ecsCluster1
   ecsService: ecsService1

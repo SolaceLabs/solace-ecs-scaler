@@ -2,10 +2,14 @@ package com.solace.scalers.aws_ecs.util;
 
 import java.net.MalformedURLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.solace.scalers.aws_ecs.EcsServiceScaler;
 import com.solace.scalers.aws_ecs.SolaceQueueMonitor;
+import com.solace.scalers.aws_ecs.model.ScalerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.BrokerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
 import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
@@ -26,18 +30,15 @@ public class SolaceQueueMonitorUtils {
                                             BrokerConfig brokerConfig, 
                                             EcsServiceConfig ecsServiceConfig ) throws MalformedURLException
     {
-        SolaceQueueMonitor solaceQueueMonitor = new SolaceQueueMonitor( 
-                                    SolaceQueueMonitor.formatUrl(
-                                        brokerConfig.getBrokerSempUrl(), 
-                                        brokerConfig.getMsgVpnName(), 
-                                        ecsServiceConfig.getQueueName()
-                                    ), 
-                                    ecsServiceConfig.getQueueName() );
 
-        solaceQueueMonitor.setUsername( brokerConfig.getUsername() );
-        solaceQueueMonitor.setPassword( brokerConfig.getPassword() );
+        Map<String, ScalerConfig.SempConfig> sempConfigMap = new ConcurrentHashMap<>(2,0.75F, 2);
+        sempConfigMap.put("active", brokerConfig.getActiveMsgVpnSempConfig());
+        if(brokerConfig.getStandbyMsgVpnSempConfig() != null) {
+            sempConfigMap.put("standby", brokerConfig.getStandbyMsgVpnSempConfig());
+        }
 
-        return solaceQueueMonitor;
+
+        return new SolaceQueueMonitor(sempConfigMap, brokerConfig.getMsgVpnName(), ecsServiceConfig.getQueueName());
     }
 
     /**
