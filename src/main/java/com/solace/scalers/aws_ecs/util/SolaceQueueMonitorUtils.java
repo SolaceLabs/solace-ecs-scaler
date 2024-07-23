@@ -2,13 +2,12 @@ package com.solace.scalers.aws_ecs.util;
 
 import java.net.MalformedURLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import com.solace.scalers.aws_ecs.EcsServiceScaler;
 import com.solace.scalers.aws_ecs.SolaceQueueMonitor;
+import com.solace.scalers.aws_ecs.http.DefaultURLConnectionFactory;
 import com.solace.scalers.aws_ecs.model.ScalerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.BrokerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
@@ -41,7 +40,7 @@ public class SolaceQueueMonitorUtils {
         }
 
 
-        return new SolaceQueueMonitor(sempConfigMap, brokerConfig.getMsgVpnName(), ecsServiceConfig.getQueueName());
+        return new SolaceQueueMonitor(sempConfigMap, brokerConfig.getMsgVpnName(), ecsServiceConfig.getQueueName(), new DefaultURLConnectionFactory());
     }
 
     /**
