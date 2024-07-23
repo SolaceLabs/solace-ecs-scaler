@@ -2,7 +2,9 @@ package com.solace.scalers.aws_ecs;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,7 +26,7 @@ import lombok.extern.log4j.Log4j2;
  * - Scales applications based on observations and configuration settings
  */
 @Log4j2
-public class SolaceEcsAutoscalerApp 
+public class SolaceEcsAutoscalerApp
 {
     private static final long       INIT_POLLING_DELAY_SEMP = 5L,
                                     INIT_POLLING_DELAY_PURGE = 10L,
@@ -66,13 +68,13 @@ public class SolaceEcsAutoscalerApp
                                     ScalerConfigParser.parseScalerConfig( configFile )
                                 );
         } catch ( Exception exc ) {
-            log.error( "Could not parse scaler config at: {} -- Exiting" );
+            log.error( "Could not parse scaler config at: {} -- Exiting", configFile);
             System.exit(1);
         }
 
         log.info("Starting Solace/ECS Scaler -- Monitoring Solace Messaging Service at URL: {} / MsgVpn: {}",
-                            scalerConfig.getBrokerConfig().getBrokerSempUrl(), 
-                            scalerConfig.getBrokerConfig().getMsgVpnName());
+                scalerConfig.getBrokerConfig().getActiveMsgVpnSempConfig().getBrokerSempUrl(),
+                scalerConfig.getBrokerConfig().getMsgVpnName());
 
         // Create Scaler Object maps indexed by queueName: SolaceQueueMonitor, EcsServiceScaler, and EcsServiceMetrics
         final Map<String, SolaceQueueMonitor>   solaceQueueMonitorMap   = new ConcurrentHashMap<>( scalerConfig.getEcsServiceConfig().size(), 0.75F, 2 );
@@ -122,6 +124,7 @@ public class SolaceEcsAutoscalerApp
                 if ( !isRunning ) return;
 
                 try {
+//                    TODO: Check Broker Status
                     Map<String, Long> metricsEntry = SolaceQueueMonitorUtils.getQueueMetricsFromQueueResponse( entry.getValue().getSempMonitorForQueue() );
                     ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getMetricObservations().put( System.currentTimeMillis(), metricsEntry );
                     log.info( "Service={} -- Stored Metrics: {}: {}, {}: {}, {}: {}",
@@ -225,7 +228,7 @@ public class SolaceEcsAutoscalerApp
                 HealthUtil.updateHealthStatus(isRunning);
                 break;
             }
-            
+
             // TODO - make this value configurable -- scaler interval
             Thread.sleep(SCALING_OPERATION_INTERVAL_MILLIS);
         }

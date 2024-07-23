@@ -1,8 +1,13 @@
 ---
 brokerConfig:
-  brokerSempUrl: http://my.solace.broker.com:943
-  username: thisIsMe
-  password: secretPassword
+  activeMsgVpnSempConfig:
+    brokerSempUrl: http://my.solace.broker.com:943
+    username: activeUsername
+    password: password
+  standbyMsgVpnSempConfig:
+    brokerSempUrl: http://standby.solace.broker.com:943
+    username: activeUsername
+    password: password
   msgVpnName: testVpn
   pollingInterval: 10
 ecsServiceConfig:

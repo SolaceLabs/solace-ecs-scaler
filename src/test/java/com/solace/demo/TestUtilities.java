@@ -26,10 +26,12 @@ public class TestUtilities {
         scalerConfig.setBrokerConfig(new BrokerConfig());
         scalerConfig.setEcsServiceConfig( new ArrayList<EcsServiceConfig>() );
 
-        scalerConfig.getBrokerConfig().setBrokerSempUrl("http://my.solace.broker.com:943");
+        ScalerConfig.SempConfig activeSempConfig = new ScalerConfig.SempConfig("http://my.solace.broker.com:943", "activeUsername", "password");
+        ScalerConfig.SempConfig standbySempConfig = new ScalerConfig.SempConfig("http://standby.solace.broker.com:943", "activeUsername", "password");
+
         scalerConfig.getBrokerConfig().setMsgVpnName("testVpn");
-        scalerConfig.getBrokerConfig().setUsername("thisIsMe");
-        scalerConfig.getBrokerConfig().setPassword("secretPassword");
+        scalerConfig.getBrokerConfig().setActiveMsgVpnSempConfig(activeSempConfig);
+        scalerConfig.getBrokerConfig().setStandbyMsgVpnSempConfig(standbySempConfig);
         scalerConfig.getBrokerConfig().setPollingInterval(10);
 
         EcsServiceConfig ecs1 = new EcsServiceConfig();

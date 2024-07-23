@@ -68,7 +68,7 @@ public class ScalerConfigParser {
 
         int errorCount = 0;
 
-        if ( scalerConfig.getEcsServiceConfig().size() < 1 ) {
+        if (scalerConfig.getEcsServiceConfig().isEmpty()) {
             log.error("At least one [ecsServiceConfig] entry is required");
             return null;
         }
@@ -76,8 +76,21 @@ public class ScalerConfigParser {
             log.error("Too many scaled apps in the configuration: {}. " + 
                             "Maximum number of scaled applications for the Scaler is 100.",
                             scalerConfig.getEcsServiceConfig().size() );
+            return null;
         }
 
+        validateEcsScalerConfig(scalerConfig);
+
+        return scalerConfig;
+    }
+
+    /**
+     * Validate parsed ecsServiceConfig and detect duplicate configurations
+     * @param scalerConfig
+     * @throws Exception
+     */
+    public static void validateEcsScalerConfig(ScalerConfig scalerConfig) throws Exception {
+        int errorCount = 0;
         // For duplicate detection
         List<String> services = new ArrayList<>();
         List<String> queues = new ArrayList<>();
@@ -162,7 +175,6 @@ public class ScalerConfigParser {
             log.error( "There were {} validation errors detected in the configuration", errorCount );
             throw new Exception(String.format("There were %d validation errors detected in the configuration", errorCount));
         }
-        return scalerConfig;
     }
 
     /**
