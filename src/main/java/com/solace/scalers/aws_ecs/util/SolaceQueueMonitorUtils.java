@@ -14,6 +14,9 @@ import com.solace.scalers.aws_ecs.model.ScalerConfig.BrokerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
 import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
 
+import static com.solace.scalers.aws_ecs.SolaceQueueMonitor.ACTIVE_SEMP_CONFIG;
+import static com.solace.scalers.aws_ecs.SolaceQueueMonitor.STANDBY_SEMP_CONFIG;
+
 /**
  * Helper class to support Solace Queue Monitoring via SEMPv2
  */
@@ -32,9 +35,9 @@ public class SolaceQueueMonitorUtils {
     {
 
         Map<String, ScalerConfig.SempConfig> sempConfigMap = new ConcurrentHashMap<>(2,0.75F, 2);
-        sempConfigMap.put("active", brokerConfig.getActiveMsgVpnSempConfig());
+        sempConfigMap.put(ACTIVE_SEMP_CONFIG, brokerConfig.getActiveMsgVpnSempConfig());
         if(brokerConfig.getStandbyMsgVpnSempConfig() != null) {
-            sempConfigMap.put("standby", brokerConfig.getStandbyMsgVpnSempConfig());
+            sempConfigMap.put(STANDBY_SEMP_CONFIG, brokerConfig.getStandbyMsgVpnSempConfig());
         }
 
 

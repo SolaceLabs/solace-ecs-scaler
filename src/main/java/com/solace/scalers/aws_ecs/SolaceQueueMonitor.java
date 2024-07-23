@@ -27,7 +27,10 @@ import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
 public class SolaceQueueMonitor {
     private static final String SEMP_URL_QUERY_STRING = "?select=msgs.count,msgVpnName,queueName,msgSpoolUsage,averageRxMsgRate,averageTxMsgRate",
                                 SEMP_URL_FORMAT       = "%s/SEMP/v2/monitor/msgVpns/%s/queues/%s%s",
-                                SEMP_VPN_STATE_FORMAT = "%s/SEMP/v2/monitor/msgVpns/%s" + "?select=state";
+                                SEMP_VPN_STATE_FORMAT = "%s/SEMP/v2/monitor/msgVpns/%s" + "?select=state",
+                                SEMP_VPN_STATE_UP = "up";
+    public static final String ACTIVE_SEMP_CONFIG = "active",
+                                STANDBY_SEMP_CONFIG = "standby";
 
     private Map<String,ScalerConfig.SempConfig> sempConfigMap;
 
@@ -107,7 +110,7 @@ public class SolaceQueueMonitor {
     public synchronized SempQueueResponse getSempMonitorForQueue() throws IOException, JsonSyntaxException, URISyntaxException {
         updateActiveVpnForForQueueMonitor();
 
-        Optional<String> optionalQueueMonitorResponse = getSempResponse(formatQueueMonitorUrl(sempConfigMap.get("active").getBrokerSempUrl(), messageVpnName, queueName), sempConfigMap.get("active").getUsername(), sempConfigMap.get("active").getPassword());
+        Optional<String> optionalQueueMonitorResponse = getSempResponse(formatQueueMonitorUrl(sempConfigMap.get(ACTIVE_SEMP_CONFIG).getBrokerSempUrl(), messageVpnName, queueName), sempConfigMap.get(ACTIVE_SEMP_CONFIG).getUsername(), sempConfigMap.get(ACTIVE_SEMP_CONFIG).getPassword());
 
         if(optionalQueueMonitorResponse.isPresent()) {
             numFailedRequestsInARow = 0;
@@ -131,16 +134,16 @@ public class SolaceQueueMonitor {
      * @throws IOException
      */
     public synchronized void updateActiveVpnForForQueueMonitor() throws URISyntaxException, IOException {
-        Optional<SempMessageVpnStateResponse> optionalMessageVpnStateResponse = getVpnStateForSempConfig(sempConfigMap.get("active"));
-        if(optionalMessageVpnStateResponse.isEmpty() || !optionalMessageVpnStateResponse.get().getData().getState().equals("up")) {
-            log.info("SempUrl={} -- Unable to fetch Message VPN State from Active SEMP Config. Trying Standby", sempConfigMap.get("active").getBrokerSempUrl());
-            if(sempConfigMap.get("standby") != null) {
-                optionalMessageVpnStateResponse = getVpnStateForSempConfig(sempConfigMap.get("standby"));
-                if(optionalMessageVpnStateResponse.isPresent() && optionalMessageVpnStateResponse.get().getData().getState().equals("up")) {
+        Optional<SempMessageVpnStateResponse> optionalMessageVpnStateResponse = getVpnStateForSempConfig(sempConfigMap.get(ACTIVE_SEMP_CONFIG));
+        if(optionalMessageVpnStateResponse.isEmpty() || !optionalMessageVpnStateResponse.get().getData().getState().equals(SEMP_VPN_STATE_UP)) {
+            log.info("SempUrl={} -- Unable to fetch Message VPN State from Active SEMP Config. Trying Standby", sempConfigMap.get(ACTIVE_SEMP_CONFIG).getBrokerSempUrl());
+            if(sempConfigMap.get(STANDBY_SEMP_CONFIG) != null) {
+                optionalMessageVpnStateResponse = getVpnStateForSempConfig(sempConfigMap.get(STANDBY_SEMP_CONFIG));
+                if(optionalMessageVpnStateResponse.isPresent() && optionalMessageVpnStateResponse.get().getData().getState().equals(SEMP_VPN_STATE_UP)) {
                     // Update active vpn so that we check it first on the next interval
-                    ScalerConfig.SempConfig prevActiveVpn = sempConfigMap.get("active");
-                    sempConfigMap.put("active", sempConfigMap.get("standby"));
-                    sempConfigMap.put("standby", prevActiveVpn);
+                    ScalerConfig.SempConfig prevActiveVpn = sempConfigMap.get(ACTIVE_SEMP_CONFIG);
+                    sempConfigMap.put(ACTIVE_SEMP_CONFIG, sempConfigMap.get(STANDBY_SEMP_CONFIG));
+                    sempConfigMap.put(STANDBY_SEMP_CONFIG, prevActiveVpn);
                 } else {
                     // TODO: update to fail after X number of failed attempts in a row
                     log.error("MessageVPN={} -- Neither Message VPN is currently up. Skipping retrieval of Queue Metrics", messageVpnName);
