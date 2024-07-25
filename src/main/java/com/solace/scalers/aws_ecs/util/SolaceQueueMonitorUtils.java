@@ -52,9 +52,9 @@ public class SolaceQueueMonitorUtils {
     public static Map<String, Long> getQueueMetricsFromQueueResponse( SempQueueResponse sempQueueResponse ) {
 
         Map<String, Long> metrics = new HashMap<>( 3 );
-        metrics.put( EcsServiceScaler.METRIC_MSG_COUNT, getMessageCountFromQueueResponse(sempQueueResponse) );
-        metrics.put( EcsServiceScaler.METRIC_AVG_RX_RATE, getMessageReceiveRateFromQueueResponse(sempQueueResponse) );
-        metrics.put( EcsServiceScaler.METRIC_SPOOL_USAGE, getMessageSpoolUsageFromQueueResponse(sempQueueResponse ));
+        metrics.put( EcsServiceScalerUtils.METRIC_MSG_COUNT, getMessageCountFromQueueResponse(sempQueueResponse) );
+        metrics.put( EcsServiceScalerUtils.METRIC_AVG_RX_RATE, getMessageReceiveRateFromQueueResponse(sempQueueResponse) );
+        metrics.put( EcsServiceScalerUtils.METRIC_SPOOL_USAGE, getMessageSpoolUsageFromQueueResponse(sempQueueResponse ));
         
         return metrics;
     }
