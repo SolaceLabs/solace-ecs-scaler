@@ -125,7 +125,6 @@ public class SolaceEcsAutoscalerApp
                 if ( !isRunning ) return;
 
                 try {
-//                    TODO: Check Broker Status
                     Map<String, Long> metricsEntry = SolaceQueueMonitorUtils.getQueueMetricsFromQueueResponse( entry.getValue().getSempMonitorForQueue() );
                     ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getMetricObservations().put( System.currentTimeMillis(), metricsEntry );
                     log.info( "Service={} -- Stored Metrics: {}: {}, {}: {}, {}: {}",

@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.solace.scalers.aws_ecs.model.util.ecs.EcsServiceScalerDesiredReplicaTargets;
 import com.solace.scalers.aws_ecs.model.util.ecs.EcsServiceScalerObservations;
+import com.solace.scalers.aws_ecs.model.util.ecs.EcsServiceScalerReplicaTarget;
 import com.solace.scalers.aws_ecs.util.EcsServiceScalerUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -122,14 +124,10 @@ public class EcsServiceScaler {
             return;
         }
 
-        Map<String, List<Integer>> replicaTargets = EcsServiceScalerUtils.getReplicaTargets(currentDesiredReplicas,ecsServiceScalerObservations,ecsServiceConfig);
-
-        
-        final Integer desiredScaleInTarget = getMaximumFromList(replicaTargets.get(EcsServiceScalerUtils.SCALE_IN_REPLICA_TARGET_KEY));
-        final Integer desiredScaleOutTarget = getMaximumFromList(replicaTargets.get(EcsServiceScalerUtils.SCALE_OUT_REPLICA_TARGET_KEY));
+        EcsServiceScalerDesiredReplicaTargets ecsServiceScalerDesiredReplicaTargets = EcsServiceScalerUtils.getReplicaTargets(currentDesiredReplicas,ecsServiceScalerObservations,ecsServiceConfig);
 
         // We have our scale-in / scale-out targets, make some decisions and scale
-        scaleEcsService(desiredScaleInTarget, desiredScaleOutTarget, currentDesiredReplicas, evaluationTimeInstant);
+        scaleEcsService(ecsServiceScalerDesiredReplicaTargets.getDesiredScaleInTarget(), ecsServiceScalerDesiredReplicaTargets.getDesiredScaleOutTarget(), currentDesiredReplicas, evaluationTimeInstant);
     }
 
     /**
@@ -168,7 +166,7 @@ public class EcsServiceScaler {
 
     /**
      * Method tests for conditions that should prevent a scaling operation
-     * If none exixt, then scale out/in. Calls AWS ECS API to update the desired task count directly
+     * If none exit, then scale out/in. Calls AWS ECS API to update the desired task count directly
      * @param desiredScaleInTarget
      * @param desiredScaleOutTarget
      * @param currentDesiredReplicas
@@ -181,56 +179,23 @@ public class EcsServiceScaler {
                         Integer currentDesiredReplicas,
                         long    evaluationTimeInstant ) throws Exception {
 
-        boolean     scaleOutDecision = false,
-                    scaleInDecision = false;
-        
-        Integer     replicaTarget = null;
+        EcsServiceScalerReplicaTarget replicaTarget = EcsServiceScalerUtils.getReplicaTarget(
+                desiredScaleInTarget,
+                desiredScaleOutTarget,
+                currentDesiredReplicas,
+                evaluationTimeInstant,
+                lastScaleOutTime,
+                lastScaleInTime,
+                ecsServiceConfig);
 
-        // Let's make some decisions
-        if ( desiredScaleOutTarget != null && desiredScaleInTarget != null && desiredScaleInTarget < desiredScaleOutTarget ) {
-            // - We should not scale-in to a replica count that is less than the value computed for the scale-out target
-            // - this scenario is unlikely but technically possible:
-            // - if the scale-in stabilization window is smaller than the scale-out stabilization window
-            desiredScaleInTarget = desiredScaleOutTarget;
-        }
-        if ( desiredScaleOutTarget != null && desiredScaleOutTarget > currentDesiredReplicas ) {
-
-            logger.info("Service={} -- Scaler computes desiredReplicas={} > currentReplicas={}",
-                                LogUtils.getServiceDesignation(ecsServiceConfig),
-                                desiredScaleOutTarget, 
-                                currentDesiredReplicas );
-            if ( lastScaleOutTime < ( evaluationTimeInstant - ( ecsServiceConfig.getScalerBehaviorConfig().getScaleOutConfig().getCooldownPeriod() * 1000L ) ) ) {
-                scaleOutDecision = true;
-                replicaTarget = desiredScaleOutTarget;
-            } else {
-                logger.info("Service={} -- Service Scaling in Cooldown; Scale Out Operation blocked",
-                                LogUtils.getServiceDesignation(ecsServiceConfig) );
-                return;
-            }
-        } else if ( desiredScaleInTarget != null && desiredScaleInTarget < currentDesiredReplicas ) {
-            logger.info("Service={} -- Scaler computes desiredReplicas={} < currentReplicas={}",
-                                LogUtils.getServiceDesignation(ecsServiceConfig),
-                                desiredScaleInTarget, 
-                                currentDesiredReplicas );
-            if ( lastScaleInTime < ( evaluationTimeInstant - ( ecsServiceConfig.getScalerBehaviorConfig().getScaleInConfig().getCooldownPeriod() * 1000L ) ) ) {
-                scaleInDecision = true;
-                replicaTarget = desiredScaleInTarget;
-            } else {
-                logger.info("Service={} -- Scaling in Cooldown; Scale In Operation blocked",
-                                LogUtils.getServiceDesignation(ecsServiceConfig) );
-                return;
-            }
-        } else {
-            logger.info( "Service={} -- Scaler computes Steady State - currentReplicas={}",
-                                LogUtils.getServiceDesignation(ecsServiceConfig),
-                                currentDesiredReplicas );
+        if(!replicaTarget.isScaleInDecision() && !replicaTarget.isScaleOutDecision()) {
             return;
         }
 
         logger.info("Service={} -- Preparing to scale from {} to {} instances",
                             LogUtils.getServiceDesignation(ecsServiceConfig),
                             currentDesiredReplicas,
-                            replicaTarget );
+                            replicaTarget.getReplicaTarget() );
 
         // If we're here, we're scaling something
         try {
@@ -238,7 +203,7 @@ public class EcsServiceScaler {
                                     new UpdateServiceRequest()
                                             .withCluster(ecsServiceConfig.getEcsCluster())
                                             .withService(ecsServiceConfig.getEcsService())
-                                            .withDesiredCount(replicaTarget);
+                                            .withDesiredCount(replicaTarget.getReplicaTarget());
 
             logger.debug( "Service={} -- Update Request Body:\n" + updateServiceRequest.toString(),
                                 LogUtils.getServiceDesignation(ecsServiceConfig) );
@@ -257,7 +222,7 @@ public class EcsServiceScaler {
                 return;
             }
 
-            lastScaledReplicaCount = replicaTarget;
+            lastScaledReplicaCount = replicaTarget.getReplicaTarget();
         } catch ( Exception exc ) {
             logger.error( "Service={} -- Exception attempting to update from {} to {} instances",
                                 LogUtils.getServiceDesignation(ecsServiceConfig),
@@ -277,29 +242,12 @@ public class EcsServiceScaler {
                                 LogUtils.getServiceDesignation(ecsServiceConfig), 
                                 replicaTarget );
 
-        if ( scaleOutDecision ) {
+        if ( replicaTarget.isScaleOutDecision() ) {
             lastScaleOutTime = System.currentTimeMillis();
         }
-        if ( scaleInDecision ) {
+        if ( replicaTarget.isScaleInDecision() ) {
             lastScaleInTime = System.currentTimeMillis();
         }
-    }
-
-    /**
-     * Iterate over array of Integer objects and return the maximum or null
-     * @param eval
-     * @return
-     */
-    private Integer getMaximumFromList( List<Integer> eval ) {
-        Integer maxValue = null;
-
-        for ( Integer i : eval ) {
-            if ( i != null && ( maxValue == null ? true : i > maxValue ) ) {
-                maxValue = i;
-            }
-        }
-
-        return maxValue;
     }
 
 
