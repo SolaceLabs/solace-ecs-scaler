@@ -27,15 +27,15 @@ public class EcsServiceScalerUtilsTest {
     }
 
     @Test
-    public void getEcsServiceScalerObservations_scaleOut() {
+    public void scaleEcsService_scaleOut() {
         long evaluationTimeInstant = System.currentTimeMillis();
         Integer currentDesiredReplicas = 5;
         ScalerConfig.EcsServiceConfig ecsServiceConfig = scalerConfig.getEcsServiceConfig().get(0);
         Map<Long, Map<String, Long>> metricObservations = new ConcurrentHashMap<>(250, 0.75F, 3);
-        metricObservations.put(evaluationTimeInstant - (60L * 1000L), generateMetricsObservations(5, 20));
-        metricObservations.put(evaluationTimeInstant - (2L * 60L * 1000L), generateMetricsObservations(10, 1000));
+        metricObservations.put(evaluationTimeInstant - getMillisForNumberOfSeconds(60L), generateMetricsObservations(5, 20));
+        metricObservations.put(evaluationTimeInstant - getMillisForNumberOfSeconds(120L), generateMetricsObservations(10, 1000));
 
-        EcsServiceScalerObservations observations = EcsServiceScalerUtils.getEcsServiceScalerObservations(evaluationTimeInstant, metricObservations, 5000L, 5000L);
+        EcsServiceScalerObservations observations = EcsServiceScalerUtils.getEcsServiceScalerObservations(evaluationTimeInstant, metricObservations, getMillisForNumberOfSeconds((long) ecsServiceConfig.getScalerBehaviorConfig().getScaleOutConfig().getStabilizationWindow()), getMillisForNumberOfSeconds((long) ecsServiceConfig.getScalerBehaviorConfig().getScaleInConfig().getStabilizationWindow()));
 
         assertNotNull(observations);
         assertEquals(1000, observations.getMaxAverageMessageRateObservationUp());
@@ -48,7 +48,7 @@ public class EcsServiceScalerUtilsTest {
         assertEquals(56, (int) desiredReplicaTargets.getDesiredScaleInTarget());
         assertEquals(10, (int)desiredReplicaTargets.getDesiredScaleOutTarget());
 
-        EcsServiceScalerReplicaTarget ecsServiceScalerReplicaTarget = EcsServiceScalerUtils.getReplicaTarget(desiredReplicaTargets.getDesiredScaleInTarget(), desiredReplicaTargets.getDesiredScaleOutTarget(), currentDesiredReplicas, evaluationTimeInstant, evaluationTimeInstant - 100000L, evaluationTimeInstant - 200000L, ecsServiceConfig);
+        EcsServiceScalerReplicaTarget ecsServiceScalerReplicaTarget = EcsServiceScalerUtils.getReplicaTarget(desiredReplicaTargets.getDesiredScaleInTarget(), desiredReplicaTargets.getDesiredScaleOutTarget(), currentDesiredReplicas, evaluationTimeInstant, evaluationTimeInstant - getMillisForNumberOfSeconds(100L), evaluationTimeInstant - getMillisForNumberOfSeconds(200L), ecsServiceConfig);
         assertNotNull(ecsServiceScalerReplicaTarget);
         assertTrue(ecsServiceScalerReplicaTarget.isScaleOutDecision());
         assertFalse(ecsServiceScalerReplicaTarget.isScaleInDecision());
@@ -56,15 +56,15 @@ public class EcsServiceScalerUtilsTest {
     }
 
     @Test
-    public void getEcsServiceScalerObservations_scaleIn() {
+    public void scaleEcsService_scaleIn() {
         long evaluationTimeInstant = System.currentTimeMillis();
         Integer currentDesiredReplicas = 5;
         ScalerConfig.EcsServiceConfig ecsServiceConfig = scalerConfig.getEcsServiceConfig().get(0);
         Map<Long, Map<String, Long>> metricObservations = new ConcurrentHashMap<>(250, 0.75F, 3);
-        metricObservations.put(evaluationTimeInstant - (60L * 1000L), generateMetricsObservations(5, 20));
-        metricObservations.put(evaluationTimeInstant - (2L * 60L * 1000L), generateMetricsObservations(10, 50));
+        metricObservations.put(evaluationTimeInstant - getMillisForNumberOfSeconds(60L), generateMetricsObservations(5, 20));
+        metricObservations.put(evaluationTimeInstant - getMillisForNumberOfSeconds(45L), generateMetricsObservations(10, 50));
 
-        EcsServiceScalerObservations observations = EcsServiceScalerUtils.getEcsServiceScalerObservations(evaluationTimeInstant, metricObservations, 5000L, 5000L);
+        EcsServiceScalerObservations observations = EcsServiceScalerUtils.getEcsServiceScalerObservations(evaluationTimeInstant, metricObservations, evaluationTimeInstant - getMillisForNumberOfSeconds((long) ecsServiceConfig.getScalerBehaviorConfig().getScaleOutConfig().getStabilizationWindow()), evaluationTimeInstant - getMillisForNumberOfSeconds((long) ecsServiceConfig.getScalerBehaviorConfig().getScaleInConfig().getStabilizationWindow()));
 
         assertNotNull(observations);
         assertEquals(50, observations.getMaxAverageMessageRateObservationUp());
@@ -77,11 +77,44 @@ public class EcsServiceScalerUtilsTest {
         assertEquals(3, (int) desiredReplicaTargets.getDesiredScaleInTarget());
         assertEquals(3, (int)desiredReplicaTargets.getDesiredScaleOutTarget());
 
-        EcsServiceScalerReplicaTarget ecsServiceScalerReplicaTarget = EcsServiceScalerUtils.getReplicaTarget(desiredReplicaTargets.getDesiredScaleInTarget(), desiredReplicaTargets.getDesiredScaleOutTarget(), currentDesiredReplicas, evaluationTimeInstant, evaluationTimeInstant - 100000L, evaluationTimeInstant - 200000L, ecsServiceConfig);
+        EcsServiceScalerReplicaTarget ecsServiceScalerReplicaTarget = EcsServiceScalerUtils.getReplicaTarget(desiredReplicaTargets.getDesiredScaleInTarget(), desiredReplicaTargets.getDesiredScaleOutTarget(), currentDesiredReplicas, evaluationTimeInstant, evaluationTimeInstant - getMillisForNumberOfSeconds(10L), evaluationTimeInstant - getMillisForNumberOfSeconds(200L), ecsServiceConfig);
         assertNotNull(ecsServiceScalerReplicaTarget);
         assertTrue(ecsServiceScalerReplicaTarget.isScaleInDecision());
         assertFalse(ecsServiceScalerReplicaTarget.isScaleOutDecision());
         assertEquals(Integer.valueOf(3), ecsServiceScalerReplicaTarget.getReplicaTarget());
+    }
+
+    @Test
+    public void scaleEcsService_oldMetrics() {
+        long evaluationTimeInstant = System.currentTimeMillis();
+        Integer currentDesiredReplicas = 1;
+        ScalerConfig.EcsServiceConfig ecsServiceConfig = scalerConfig.getEcsServiceConfig().get(0);
+        Map<Long, Map<String, Long>> metricObservations = new ConcurrentHashMap<>(250, 0.75F, 3);
+        metricObservations.put(evaluationTimeInstant - getMillisForNumberOfSeconds(60L), generateMetricsObservations(5, 20));
+        metricObservations.put(evaluationTimeInstant - getMillisForNumberOfSeconds(120L), generateMetricsObservations(10, 1000));
+
+        EcsServiceScalerObservations observations = EcsServiceScalerUtils.getEcsServiceScalerObservations(evaluationTimeInstant, metricObservations, evaluationTimeInstant - getMillisForNumberOfSeconds((long) ecsServiceConfig.getScalerBehaviorConfig().getScaleOutConfig().getStabilizationWindow()), evaluationTimeInstant - getMillisForNumberOfSeconds((long) ecsServiceConfig.getScalerBehaviorConfig().getScaleInConfig().getStabilizationWindow()));
+
+        assertNotNull(observations);
+        assertEquals(20, observations.getMaxAverageMessageRateObservationUp());
+        assertEquals(20, observations.getMaxAverageMessageRateObservationDown());
+        assertEquals(5, observations.getMaxMessageCountObservationUp());
+        assertEquals(5, observations.getMaxMessageCountObservationDown());
+
+        EcsServiceScalerDesiredReplicaTargets desiredReplicaTargets = EcsServiceScalerUtils.getReplicaTargets(currentDesiredReplicas, observations, ecsServiceConfig);
+        assertNotNull(desiredReplicaTargets);
+        assertEquals(2, (int) desiredReplicaTargets.getDesiredScaleInTarget());
+        assertEquals(1, (int)desiredReplicaTargets.getDesiredScaleOutTarget());
+
+        EcsServiceScalerReplicaTarget ecsServiceScalerReplicaTarget = EcsServiceScalerUtils.getReplicaTarget(desiredReplicaTargets.getDesiredScaleInTarget(), desiredReplicaTargets.getDesiredScaleOutTarget(), currentDesiredReplicas, evaluationTimeInstant, evaluationTimeInstant - getMillisForNumberOfSeconds(10L), evaluationTimeInstant - getMillisForNumberOfSeconds(20L), ecsServiceConfig);
+        assertNotNull(ecsServiceScalerReplicaTarget);
+        assertFalse(ecsServiceScalerReplicaTarget.isScaleInDecision());
+        assertFalse(ecsServiceScalerReplicaTarget.isScaleOutDecision());
+        assertNull(ecsServiceScalerReplicaTarget.getReplicaTarget());
+    }
+
+    private Long getMillisForNumberOfSeconds(Long numberOfSeconds) {
+        return numberOfSeconds * 1000L;
     }
 
 
