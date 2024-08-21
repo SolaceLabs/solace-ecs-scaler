@@ -36,13 +36,10 @@ public class ScalerConfig {
 
         @JsonProperty
         @NonNull
-        protected String  brokerSempUrl;
+        protected SempConfig activeMsgVpnSempConfig;
 
         @JsonProperty
-        protected String  username;
-
-        @JsonProperty
-        protected String  password;
+        protected SempConfig standbyMsgVpnSempConfig;
 
         @JsonProperty
         @NonNull
@@ -51,6 +48,22 @@ public class ScalerConfig {
         @JsonProperty
         @NonNull
         protected Integer pollingInterval;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class SempConfig {
+        @JsonProperty
+        @NonNull
+        protected String  brokerSempUrl;
+
+        @JsonProperty
+        protected String  username;
+
+        @JsonProperty
+        protected String  password;
     }
 
     @Data
