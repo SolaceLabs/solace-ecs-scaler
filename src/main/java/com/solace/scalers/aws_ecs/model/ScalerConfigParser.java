@@ -78,10 +78,27 @@ public class ScalerConfigParser {
                             scalerConfig.getEcsServiceConfig().size() );
             return null;
         }
-
+        validateBrokerConfig(scalerConfig);
         validateEcsScalerConfig(scalerConfig);
 
         return scalerConfig;
+    }
+
+    /**
+     * Validate parsed brokerConfig and detect invalid configuration.
+     * Explicit checks required due to conflicts with Lombok and Jackson functionality
+     * @param scalerConfig
+     * @throws NullPointerException
+     */
+    public static void validateBrokerConfig(ScalerConfig scalerConfig) throws NullPointerException {
+        if(scalerConfig.getBrokerConfig().activeMsgVpnSempConfig == null || scalerConfig.getBrokerConfig().getActiveMsgVpnSempConfig().getBrokerSempUrl() == null) {
+            log.error("ActiveMsgVpnSempConfig is required");
+            throw new NullPointerException("ActiveMsgVpnSempConfig is required");
+        }
+        if(scalerConfig.getBrokerConfig().getMsgVpnName() == null) {
+            log.error("MsgVpnName is required");
+            throw new NullPointerException("ActiveMsgVpnSempConfig is required");
+        }
     }
 
     /**

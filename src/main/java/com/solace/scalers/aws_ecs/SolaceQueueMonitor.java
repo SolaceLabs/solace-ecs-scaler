@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import com.solace.scalers.aws_ecs.model.ScalerConfig;
 import com.solace.scalers.aws_ecs.model.semp_v2.SempMessageVpnStateResponse;
+import com.solace.scalers.aws_ecs.http.URLConnectionFactory;
 import lombok.extern.log4j.Log4j2;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -27,7 +28,7 @@ import com.solace.scalers.aws_ecs.model.semp_v2.SempQueueResponse;
 public class SolaceQueueMonitor {
     private static final String SEMP_URL_QUERY_STRING = "?select=msgs.count,msgVpnName,queueName,msgSpoolUsage,averageRxMsgRate,averageTxMsgRate",
                                 SEMP_URL_FORMAT       = "%s/SEMP/v2/monitor/msgVpns/%s/queues/%s%s",
-                                SEMP_VPN_STATE_FORMAT = "%s/SEMP/v2/monitor/msgVpns/%s" + "?select=state",
+                                SEMP_VPN_STATE_FORMAT = "%s/SEMP/v2/monitor/msgVpns/%s?select=state",
                                 SEMP_VPN_STATE_UP = "up";
     public static final String ACTIVE_SEMP_CONFIG = "active",
                                 STANDBY_SEMP_CONFIG = "standby";
@@ -39,6 +40,8 @@ public class SolaceQueueMonitor {
     private String queueName = "";
 
     private int numFailedRequestsInARow = 0;
+
+    private final URLConnectionFactory connectionFactory;
 
     /**
      * Get queueName associated with this object
@@ -77,7 +80,7 @@ public class SolaceQueueMonitor {
     public static String formatQueueMonitorUrl(
                 String brokerSempUrl,
                 String msgVpnName, 
-                String queueName ) {
+                String queueName) {
         return
             String.format( SEMP_URL_FORMAT, brokerSempUrl, msgVpnName, queueName, SEMP_URL_QUERY_STRING );
     }
@@ -92,10 +95,11 @@ public class SolaceQueueMonitor {
      * @param sempConfigMap
      * @throws MalformedURLException
      */
-    public SolaceQueueMonitor(Map<String, ScalerConfig.SempConfig> sempConfigMap, String messageVpnName, String queueName ) throws MalformedURLException {
+    public SolaceQueueMonitor(Map<String, ScalerConfig.SempConfig> sempConfigMap, String messageVpnName, String queueName, URLConnectionFactory connectionFactory ) throws MalformedURLException {
         this.sempConfigMap = sempConfigMap;
         this.messageVpnName = messageVpnName;
         this.queueName = queueName;
+        this.connectionFactory = connectionFactory;
     }
 
     /**
@@ -181,7 +185,7 @@ public class SolaceQueueMonitor {
      * @throws URISyntaxException
      */
     public synchronized Optional<String> getSempResponse(String urlString, String username, String password) throws IOException, URISyntaxException {
-        HttpURLConnection connection = (HttpURLConnection) new URI(urlString).toURL().openConnection();
+        HttpURLConnection connection = connectionFactory.createConnection(urlString);
 
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Content-Type", "application/json");
@@ -191,8 +195,6 @@ public class SolaceQueueMonitor {
             connection.setRequestProperty("Authorization", authHeader);
         }
         connection.setConnectTimeout(2500);
-
-        connection.connect();
 
         int responseCode = connection.getResponseCode();
         if (responseCode < 200 || responseCode > 204 ) {

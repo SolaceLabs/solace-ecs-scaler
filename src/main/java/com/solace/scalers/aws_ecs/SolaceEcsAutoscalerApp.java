@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import com.solace.scalers.aws_ecs.model.ScalerConfig;
 import com.solace.scalers.aws_ecs.model.ScalerConfigParser;
 import com.solace.scalers.aws_ecs.model.ScalerConfig.EcsServiceConfig;
+import com.solace.scalers.aws_ecs.util.EcsServiceScalerUtils;
 import com.solace.scalers.aws_ecs.util.HealthUtil;
 import com.solace.scalers.aws_ecs.util.LogUtils;
 import com.solace.scalers.aws_ecs.util.SolaceQueueMonitorUtils;
@@ -124,14 +125,13 @@ public class SolaceEcsAutoscalerApp
                 if ( !isRunning ) return;
 
                 try {
-//                    TODO: Check Broker Status
                     Map<String, Long> metricsEntry = SolaceQueueMonitorUtils.getQueueMetricsFromQueueResponse( entry.getValue().getSempMonitorForQueue() );
                     ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getMetricObservations().put( System.currentTimeMillis(), metricsEntry );
                     log.info( "Service={} -- Stored Metrics: {}: {}, {}: {}, {}: {}",
                                 LogUtils.getServiceDesignation( ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getEcsServiceConfig() ),
-                                EcsServiceScaler.METRIC_MSG_COUNT, metricsEntry.get(EcsServiceScaler.METRIC_MSG_COUNT),
-                                EcsServiceScaler.METRIC_AVG_RX_RATE, metricsEntry.get(EcsServiceScaler.METRIC_AVG_RX_RATE),
-                                EcsServiceScaler.METRIC_SPOOL_USAGE, metricsEntry.get(EcsServiceScaler.METRIC_SPOOL_USAGE) );
+                                EcsServiceScalerUtils.METRIC_MSG_COUNT, metricsEntry.get(EcsServiceScalerUtils.METRIC_MSG_COUNT),
+                                EcsServiceScalerUtils.METRIC_AVG_RX_RATE, metricsEntry.get(EcsServiceScalerUtils.METRIC_AVG_RX_RATE),
+                            EcsServiceScalerUtils.METRIC_SPOOL_USAGE, metricsEntry.get(EcsServiceScalerUtils.METRIC_SPOOL_USAGE) );
                 } catch ( Exception exc ) {
                     log.error( "Service={} -- Error Obtaining/Storing Metrics -- Exception: {}",
                                 LogUtils.getServiceDesignation( ecsServiceScalerMap.get( entry.getValue().getQueueName() ).getEcsServiceConfig() ),

@@ -1,0 +1,64 @@
+---
+brokerConfig:
+  activeMsgVpnSempConfig:
+    brokerSempUrl: http://my.solace.broker.com:943
+    username: activeUsername
+    password: password
+  standbyMsgVpnSempConfig:
+    brokerSempUrl: http://standby.solace.broker.com:943
+    username: activeUsername
+    password: password
+  msgVpnName: testVpn
+  pollingInterval: 10
+ecsServiceConfig:
+- ecsCluster: ecsCluster1
+  ecsService: ecsService1
+  queueName: service-queue-1
+  scalerBehaviorConfig:
+    minReplicaCount: 1
+    maxReplicaCount: 10
+    messageCountTarget: 50
+    messageReceiveRateTarget: 20
+    messageSpoolUsageTarget: 100
+    scaleOutConfig:
+      maxScaleStep: 5
+      cooldownPeriod: 30
+      stabilizationWindow: 10
+    scaleInConfig:
+      maxScaleStep: 2
+      cooldownPeriod: 60
+      stabilizationWindow: 120
+- ecsCluster: ecsCluster2
+  ecsService: ecsService2
+  queueName: service-queue-1
+  scalerBehaviorConfig:
+    minReplicaCount: 1
+    maxReplicaCount: 25
+    messageCountTarget: 30
+    messageReceiveRateTarget: 15
+    messageSpoolUsageTarget: 200
+    scaleOutConfig:
+      maxScaleStep: 5
+      cooldownPeriod: 30
+      stabilizationWindow: 10
+    scaleInConfig:
+      maxScaleStep: 2
+      cooldownPeriod: 60
+      stabilizationWindow: 120
+- ecsCluster: ecsCluster3
+  ecsService: ecsService3
+  queueName: service-queue-3
+  scalerBehaviorConfig:
+    minReplicaCount: 1
+    maxReplicaCount: 12
+    messageCountTarget: 100
+    messageReceiveRateTarget: 30
+    messageSpoolUsageTarget: 200
+    scaleOutConfig:
+      maxScaleStep: 5
+      cooldownPeriod: 30
+      stabilizationWindow: 10
+    scaleInConfig:
+      maxScaleStep: 2
+      cooldownPeriod: 60
+      stabilizationWindow: 120
